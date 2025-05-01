@@ -60,6 +60,6 @@ def rag_query(user_query):
 
 # 8. Example Usage
 if __name__ == "__main__":
-    user_question = "which product have higher discount in summer ?"
+    user_question = "how many toys ordered in p0002?"
     answer = rag_query(user_question)
     print("\n---Answer---\n", answer)

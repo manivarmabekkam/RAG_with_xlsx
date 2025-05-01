@@ -1,0 +1,5 @@
+faiss_cpu==1.11.0
+google_cloud_aiplatform==1.71.1
+numpy==2.2.5
+pandas==2.2.3
+vertexai==1.71.1
