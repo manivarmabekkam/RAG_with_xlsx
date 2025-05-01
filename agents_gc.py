@@ -1,65 +1,64 @@
-
 import os
-
-import numpy as np
+import streamlit as st
 import pandas as pd
 from langchain.chains import RetrievalQA
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_google_vertexai import VertexAI
-from langchain_community.vectorstores import FAISS  # Updated import
-from langchain_community.embeddings import HuggingFaceEmbeddings  # Updated import
-
-
-
-# Set tokenizer parallelism to avoid warning
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-# 1. Initialize Vertex AI
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import HuggingFaceEmbeddings
 import vertexai
 
-vertexai.init(project="agents-458316", location="us-central1")
+# Set environment variable
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# 2. Load Excel Data
-df = pd.read_excel("store_inventory.xlsx")
+# Page config
+st.set_page_config(page_title="GNI Tool", layout="centered")
+st.title("📊 Shopify Inventory QA")
 
-# 3. Prepare documents
-documents = []
-for _, row in df.iterrows():
-    # Convert row to string
-    text = " ".join(str(v) for v in row.values)
-    documents.append(Document(page_content=text, metadata=dict(row)))
+@st.cache_resource
+def load_data_and_setup():
+    # VertexAI Init
+    vertexai.init(project="agents-458316", location="us-central1")
+    
+    # Load Excel
+    df = pd.read_excel("store_inventory.xlsx")
 
-# 4. Initialize HuggingFace Embeddings (runs locally)
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    # Convert rows to Documents
+    documents = []
+    for _, row in df.iterrows():
+        text = " ".join(str(v) for v in row.values)
+        documents.append(Document(page_content=text, metadata=dict(row)))
 
-# 5. Create FAISS vector store
-vectorstore = FAISS.from_documents(documents, embeddings)
+    # Embeddings + VectorStore
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vectorstore = FAISS.from_documents(documents, embeddings)
 
-# 6. Create QA Chain with updated VertexAI initialization
-llm = VertexAI(
-    model_name="gemini-1.5-flash",  # Gemini model name
-    max_output_tokens=256,
-    temperature=0.1,
-    top_p=0.8,
-    top_k=40,
-)
+    # VertexAI model
+    llm = VertexAI(
+        model_name="gemini-1.5-flash",
+        max_output_tokens=256,
+        temperature=0.1,
+        top_p=0.8,
+        top_k=40,
+    )
 
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",
-    retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
-)
+    # RAG Chain
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff",
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
+    )
+    return qa_chain
 
+# Load everything
+qa_chain = load_data_and_setup()
 
-# 7. Function: RAG Query
-def rag_query(user_query):
-    response = qa_chain.run(user_query)
-    return response
+# UI Input
+user_question = st.text_input("Ask a question about the store inventory:", placeholder="e.g., how many toys ordered in p0002?")
 
-
-# 8. Example Usage
-if __name__ == "__main__":
-    user_question = "which product have higher discount in summer ?"
-    answer = rag_query(user_question)
-    print("\n---Answer---\n", answer)
+if user_question:
+    with st.spinner("Generating answer..."):
+        answer = qa_chain.run(user_question)
+        st.success("✅ Answer:")
+        st.write(answer)
