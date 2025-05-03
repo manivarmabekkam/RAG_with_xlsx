@@ -67,7 +67,7 @@ print(answer)
 You can also run the script directly:
 
 ```bash
-python agents_gc.py
+streamlit run agents_gc.py
 ```
 
 ## How It Works
@@ -125,16 +125,15 @@ def rag_query(user_query):
 
 ## Dependencies
 
-- faiss_cpu==1.11.0
-- google_cloud_aiplatform==1.71.1
-- numpy==2.2.5
-- pandas==2.2.3
-- vertexai==1.71.1
-- langchain
-- langchain-google-vertexai
-- langchain-community
-- sentence-transformers
-- openpyxl
+faiss_cpu==1.7.4
+google_cloud_aiplatform==1.48.0
+langchain==0.3.24
+langchain_community==0.3.23
+langchain_google_vertexai==2.0.21
+numpy==2.2.5
+pandas==2.2.3
+streamlit==1.34.0
+vertexai==1.71.1
 
 ## Note
 
